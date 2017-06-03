@@ -10,6 +10,7 @@ import 	"image/color"
 import 	"image/png"
 import "strconv"
 import "strings"
+import "time"
 
 
 const infinity = 1000
@@ -119,11 +120,39 @@ func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int
 }
 */
 
-func composeimg(img *image.Gray, kanal chan imgval) {
+func grayimg(rect image.Rectangle, kanal chan imgval, quit chan bool) {
+	
+
+	nrpoints := (rect.Max.X - rect.Min.X)  * (rect.Max.Y - rect.Min.Y)
+	writepoints := int(nrpoints/10)
+	
+	img := image.NewGray(rect)
+
+	f , _ := os.Create("/tmp/gray.png")
+
+	defer func (f *os.File, quit chan  bool ){
+		f.Seek(0,0)
+		png.Encode(f, img)
+		f.Sync()
+		f.Close()
+		fmt.Printf("grayimg: quitting\n")
+		quit <- true
+	}(f,quit)
+	
 	points := 0
+	var iv imgval
+	do_quit := false
 	for  {
-		iv := <-kanal
-		points++;
+		select {
+		case iv = <-kanal:
+		case <-quit:
+			do_quit = true
+			fmt.Printf("grayimg: received quit\n")
+		case <-time.After(time.Second * 1):
+			if do_quit { return }
+		}
+		
+		
 		gray := 255-uint8((iv.v*10) % 256)
 //		gray := uint8(255)
 		if iv.v == 0 {
@@ -132,7 +161,16 @@ func composeimg(img *image.Gray, kanal chan imgval) {
 		x,y  := int(iv.x), int(iv.y)
 		
 		img.SetGray(x,y, color.Gray{gray})
+
+		if points % writepoints == 0 {
+			f.Seek(0,0)
+			png.Encode(f, img)
+			f.Sync()
+		}
+		points++;
 	}
+	
+	
 }
 
 func tuple_parse ( tuple string ) complex128 {
@@ -221,7 +259,7 @@ func main() {
 	
 	rect := image.Rect( xcornerx, xcornery, ycornerx, ycornery )
 	
-	img := image.NewGray(rect)
+//	img := image.NewGray(rect)
 	
 	
 	
@@ -234,8 +272,9 @@ func main() {
 	job := 0
 	kanal :=  make(chan int)
 	imgkanal :=  make(chan imgval)
+	quit :=  make(chan bool)
 
-	go composeimg(img, imgkanal)
+	go grayimg(rect, imgkanal, quit)
 
 	for i := 0 ; i < blocks; i++ {
 		dx :=  real(theX) + float64(i) * sizex
@@ -256,16 +295,19 @@ func main() {
 		}
 	}
 
-	f , _ := os.Create("/tmp/img.png")
 	for ; job > 0 ; job-- {
-		f.Seek(0,0)
-		png.Encode(f, img)
-		f.Sync()
 		k:= <-kanal
 		fmt.Printf("done %d\n", k)
 	}
-	f.Close()
 
+	quit <- true
+
+	_ = <-quit  
+
+	
+
+	
+	
 //	fmt.Printf("img minx %d miny %d maxx %d maxy %d \n",  img.Bounds().Min.X, img.Bounds().Min.Y, img.Bounds().Max.X, img.Bounds().Max.Y  )
 
 

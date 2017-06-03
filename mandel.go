@@ -14,9 +14,9 @@ const upperbound = 2
 
 //const theX = complex(-1.8625,-0.001)
 //const theY = complex(-1.8595,0.001)
-const theX = complex(-.750125,-0.006125)
-const theY = complex(-0.75,0.006125)
-const res = 100
+const DefaultX = complex(-2.5,-1)
+const DefaultY = complex(1.0,1.0)
+const DefaultRes = 1000
 
 
 type imgval struct  {
@@ -118,9 +118,21 @@ func composeimg(img *image.Gray, kanal chan imgval) {
 	}
 }
 
+func parse_args() (complex128, complex128, int) {
+
+	res := DefaultRes
+	x := DefaultX
+	y := DefaultY
+	
+
+	
+	return x, y, res
+	
+}
+
 func main() {
 
-
+	theX, theY, res := parse_args()
 
         width := real(theY) - real(theX)
         height := imag(theY) - imag(theX)

@@ -7,6 +7,9 @@ import "math/cmplx"
 import 	"image"
 import 	"image/color"
 import 	"image/png"
+import "strconv"
+import "string"
+
 
 const infinity = 1000
 const blocks = 5
@@ -118,13 +121,33 @@ func composeimg(img *image.Gray, kanal chan imgval) {
 	}
 }
 
+func tuple_parse ( tuple string ) complex128 {
+	
+}
+
+
 func parse_args() (complex128, complex128, int) {
+
+	err  NumError
 
 	res := DefaultRes
 	x := DefaultX
 	y := DefaultY
-	
 
+	err = nil
+	// We expect either 0 arguments (in which case the defaults hold)or 2  (x,y coords), or 3 (x,y,res)
+	
+	argsWithoutProg := os.Args[1:]
+
+	switch len(argsWithoutProg) {
+	case 2:
+		x = tuple_parse(argsWithoutProg[0])
+		y = tuple_parse(argsWithoutProg[1])
+	case 3:
+		x = tuple_parse(argsWithoutProg[0])
+		y = tuple_parse(argsWithoutProg[1])
+		res, err = strconv.Atoi(argsWithoutProg[2])
+	}
 	
 	return x, y, res
 	

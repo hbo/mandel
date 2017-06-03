@@ -167,7 +167,11 @@ func parse_args() (complex128, complex128, int) {
 			fmt.Printf("error in parsing parameter %s\n", argsWithoutProg[2])
 			panic("panicing!")
 		}
-		
+	case 0:
+		return x, y, res
+	default:
+		fmt.Printf("error in parsing parameter: %d parameters\nshould be 0, 2 or 3\n", len(argsWithoutProg))
+		panic("panicing!")
 	}
 	
 	return x, y, res
@@ -176,7 +180,15 @@ func parse_args() (complex128, complex128, int) {
 
 func main() {
 
+	defer func () {
+		if err := recover(); err != nil {
+			fmt.Printf("too bad, we have to say: %s\n", err)
+			return
+		}
+	}()
+	
 	theX, theY, res := parse_args()
+
 
         width := real(theY) - real(theX)
         height := imag(theY) - imag(theX)

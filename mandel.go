@@ -3,6 +3,7 @@ package main
 import "fmt"
 //import "io"
 import "os"
+import "math"
 import "math/cmplx"
 import 	"image"
 import 	"image/color"
@@ -47,8 +48,14 @@ func iter(c complex128, bound float64) int {
 
 
 
-func trivial_point ( c complex128 ) bool {
-	return false
+func trivial_point ( x , y float64  ) bool {
+	xless := (x - 0.25)
+
+	yy := y*y
+	pp := xless*xless + yy
+	p := math.Sqrt( pp )
+	return ( x < p - 2*pp + 0.25  ) || ( (x+1)*(x+1) + yy < 1/16.0 )
+	
 }
 
 func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int, imgkanal chan imgval) {
@@ -74,7 +81,7 @@ func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int
 			stepy += resy
                         c := complex(stepx,stepy)
 			var rounds int
-			if trivial_point(c) {
+			if trivial_point(stepx,stepy) {
 				rounds = 0
 			} else {
 				rounds = iter(c,upperbound)

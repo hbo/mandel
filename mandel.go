@@ -47,7 +47,9 @@ func iter(c complex128, bound float64) int {
 
 
 
-
+func trivial_point ( c complex128 ) bool {
+	return false
+}
 
 func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int, imgkanal chan imgval) {
 
@@ -71,7 +73,12 @@ func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int
 		for ycount , stepy  := ypix, imag(x) ; ycount < yypix;  ycount++ {
 			stepy += resy
                         c := complex(stepx,stepy)
-			rounds := iter(c,upperbound)
+			var rounds int
+			if trivial_point(c) {
+				rounds = 0
+			} else {
+				rounds = iter(c,upperbound)
+			}
 			imgkanal <- imgval{xcount, ycount, rounds}
                 }
         }

@@ -8,7 +8,7 @@ import 	"image"
 import 	"image/color"
 import 	"image/png"
 import "strconv"
-import "string"
+import "strings"
 
 
 const infinity = 1000
@@ -122,19 +122,36 @@ func composeimg(img *image.Gray, kanal chan imgval) {
 }
 
 func tuple_parse ( tuple string ) complex128 {
+
+	comps := strings.Split(tuple, ",")
+
+	real , err  := strconv.ParseFloat(comps[0], 64)
+
+	if err != nil {
+		fmt.Printf("error in parsing parameter %s\n", tuple)
+		panic("panicing!")
+	}
 	
+	img , err  := strconv.ParseFloat(comps[1], 64)
+
+	if err != nil {
+		fmt.Printf("error in parsing parameter %s\n", tuple)
+		panic("panicing!")
+	}
+
+	return complex(real, img)
 }
 
 
 func parse_args() (complex128, complex128, int) {
 
-	err  NumError
+	var err error
 
 	res := DefaultRes
 	x := DefaultX
 	y := DefaultY
 
-	err = nil
+
 	// We expect either 0 arguments (in which case the defaults hold)or 2  (x,y coords), or 3 (x,y,res)
 	
 	argsWithoutProg := os.Args[1:]
@@ -146,7 +163,11 @@ func parse_args() (complex128, complex128, int) {
 	case 3:
 		x = tuple_parse(argsWithoutProg[0])
 		y = tuple_parse(argsWithoutProg[1])
-		res, err = strconv.Atoi(argsWithoutProg[2])
+		if res, err = strconv.Atoi(argsWithoutProg[2]) ; err != nil {
+			fmt.Printf("error in parsing parameter %s\n", argsWithoutProg[2])
+			panic("panicing!")
+		}
+		
 	}
 	
 	return x, y, res

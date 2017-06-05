@@ -112,15 +112,17 @@ func (gimg colImage) Max() image.Point  { return gimg.rect.Max }
 func (gimg colImage) Min() image.Point  { return gimg.rect.Min }
 
 func (gimg colImage) Set(x,y, col int)  {
-	r := uint8((7*col + 25) % 256 )
-	b := uint8((11*col + 50) % 256)
-	g := uint8((17*col + 75) % 256)
-//		gray := uint8(255)
-	if col == 0 {
-		r = 0
-		g = 0
-		b = 0
-	} 
+	r, g, b := uint8(0), uint8(0), uint8(0)
+	
+
+	if col != 0 {
+		// this here defines the coloring of the picture
+		// currently quite daftly made.  We probably should
+		// define a curve through rgb space.
+		r = uint8((7*col + 25) % 256 )
+		b = uint8((11*col + 50) % 256)
+		g = uint8((17*col + 75) % 256)
+	}
 	gimg.img.Set(x,y, color.NRGBA{r,g,b,255})
 }
 

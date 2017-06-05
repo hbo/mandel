@@ -127,7 +127,7 @@ func (gimg colImage) Set(x,y, col int)  {
 }
 
 
-func grayimg(img TargetImage, kanal chan imgval, quit chan bool) {
+func composeimg(img TargetImage, kanal chan imgval, quit chan bool) {
 	
 	
 	nrpoints := (img.Max().X - img.Min().X)  * (img.Max().Y - img.Min().Y)
@@ -139,7 +139,7 @@ func grayimg(img TargetImage, kanal chan imgval, quit chan bool) {
 	defer func (quit chan  bool ){
 		img.Sync()
 		img.Close()
-		fmt.Printf("grayimg: quitting\n")
+		fmt.Printf("composeimg: quitting\n")
 		quit <- true
 	}(quit)
 	
@@ -151,7 +151,7 @@ func grayimg(img TargetImage, kanal chan imgval, quit chan bool) {
 		case iv = <-kanal:
 		case <-quit:
 			do_quit = true
-			fmt.Printf("grayimg: received quit\n")
+			fmt.Printf("composeimg: received quit\n")
 		case <-time.After(time.Second * 1):
 			if do_quit { return }
 		}
@@ -365,7 +365,7 @@ func main() {
 	imgkanal :=  make(chan imgval)
 	quit :=  make(chan bool)
 
-	go grayimg(img, imgkanal, quit)
+	go composeimg(img, imgkanal, quit)
 
 	for i := 0 ; i < blocks; i++ {
 		dx :=  real(theX) + float64(i) * sizex

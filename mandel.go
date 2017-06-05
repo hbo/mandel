@@ -181,12 +181,10 @@ func iter(c complex128, bound float64) int {
                 z = zz + c
 		abs := cmplx.Abs(z)
                 if abs > bound {
-//	fmt.Printf("no convergence %C %C %d, %f\n", c, z, n, abs)
                         return n+1
                 }
         }
 	
-//	fmt.Printf("convergence %c %d\n", c, n)
         return 0
 }
 
@@ -239,29 +237,6 @@ func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int
 	
 	
 }
-
-/* func mandel2(x,y complex128, resx, resy float64, job int, kanal chan int, imgkanal chan imgval)  {
-
-        width := real(y) - real(x)
-        height := imag(x) - imag(y)
- 	fmt.Printf("mandel %d %c %c  width %f height %f \n", job, x, y, width, height )
-        if width <= 0 ||  height <= 0 {
-                fmt.Printf("choose your numbers fool: width %f height %f \n", width, height)
-		return
-        }
-	xcount := 0
-	ycount := 0
-        for stepx := real(x) ; stepx < real(y) ; stepx += resx, xcount++ {
-                for stepy := imag(x) ; stepy > imag(y) ; stepy -= resy, ycount++ {
-                        c := complex(stepx,stepy)
-			rounds := iter(c,10e+6)
-			imgkanal <- imgval{xcount, stepy, rounds}
-                }
-
-        }
-	kanal <- job
-}
-*/
 
 
 func tuple_parse ( tuple string ) complex128 {
@@ -391,13 +366,11 @@ func main() {
 		fmt.Printf("done %d\n", k)
 	}
 
+	// signale composeimg goroutine that all threads are dead
 	quit <- true
+	// wait for ack from composeimg
+	<-quit  
 
-	_ = <-quit  
-
-	
-
-	
 	
 //	fmt.Printf("img minx %d miny %d maxx %d maxy %d \n",  img.Bounds().Min.X, img.Bounds().Min.Y, img.Bounds().Max.X, img.Bounds().Max.Y  )
 

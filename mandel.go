@@ -28,6 +28,147 @@ type imgval struct  {
 	x,y, v  int
 }
 
+type TargetImage interface {
+	Set(x,y, col int)
+	Max() image.Point
+	Min() image.Point
+	Sync() error
+	Close() error
+}
+
+
+type grayImage struct {
+	rect *image.Rectangle
+	img *image.Gray 
+	f *os.File 
+}
+
+type colImage struct {
+	rect *image.Rectangle
+	img *image.NRGBA 
+	f *os.File 
+}
+
+
+
+func NewGrayImage(r image.Rectangle, fname string) *grayImage {
+	
+	if thef, err := os.Create(fname) ; err != nil {
+		return nil
+	} else {
+		theimg := image.NewGray(r)
+		return &grayImage{rect: &r, f: thef, img: theimg}
+	}
+}
+
+func NewColImage(r image.Rectangle, fname string) *colImage {
+	
+	if thef, err := os.Create(fname) ; err != nil {
+		return nil
+	} else {
+		theimg := image.NewNRGBA(r)
+		return &colImage{rect: &r, f: thef, img: theimg}
+	}
+}
+
+
+
+
+
+func (gimg grayImage) Set(x,y, col int)  {
+	gray := 255-uint8((col*5) % 256)
+//		gray := uint8(255)
+	if col == 0 {
+		gray = 0
+	} 
+	gimg.img.SetGray(x,y, color.Gray{gray})
+}
+func (gimg grayImage) Max() image.Point  { return gimg.rect.Max }
+func (gimg grayImage) Min() image.Point  { return gimg.rect.Min }
+
+func (gimg grayImage) 	Sync() error {
+	gimg.f.Seek(0,0)
+	png.Encode(gimg.f, gimg.img)
+	return gimg.f.Sync()
+	
+}
+
+func (gimg grayImage)  Close() error {
+	return gimg.f.Close()
+}
+
+func (gimg colImage)  Close() error {
+	return gimg.f.Close()
+}
+
+func (gimg colImage) 	Sync() error {
+	gimg.f.Seek(0,0)
+	png.Encode(gimg.f, gimg.img)
+	return gimg.f.Sync()
+	
+}
+
+func (gimg colImage) Max() image.Point  { return gimg.rect.Max }
+func (gimg colImage) Min() image.Point  { return gimg.rect.Min }
+
+func (gimg colImage) Set(x,y, col int)  {
+	r := uint8((7*col + 25) % 256 )
+	b := uint8((11*col + 50) % 256)
+	g := uint8((17*col + 75) % 256)
+//		gray := uint8(255)
+	if col == 0 {
+		r = 0
+		g = 0
+		b = 0
+	} 
+	gimg.img.Set(x,y, color.NRGBA{r,g,b,255})
+}
+
+
+func grayimg(img TargetImage, kanal chan imgval, quit chan bool) {
+	
+	
+	nrpoints := (img.Max().X - img.Min().X)  * (img.Max().Y - img.Min().Y)
+	writepoints := int(nrpoints/10)
+	
+	//	img := image.NewGray(rect)
+
+	
+	defer func (quit chan  bool ){
+		img.Sync()
+		img.Close()
+		fmt.Printf("grayimg: quitting\n")
+		quit <- true
+	}(quit)
+	
+	points := 0
+	var iv imgval
+	do_quit := false
+	for  {
+		select {
+		case iv = <-kanal:
+		case <-quit:
+			do_quit = true
+			fmt.Printf("grayimg: received quit\n")
+		case <-time.After(time.Second * 1):
+			if do_quit { return }
+		}
+		
+		
+		x,y  := int(iv.x), int(iv.y)
+		
+		img.Set(x,y, iv.v)
+
+		if points % writepoints == 0 {
+			img.Sync()
+		}
+		points++;
+	}
+	
+	
+}
+
+
 
 func iter(c complex128, bound float64) int {
         z := complex(0,0)
@@ -120,58 +261,6 @@ func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int
 }
 */
 
-func grayimg(rect image.Rectangle, kanal chan imgval, quit chan bool) {
-	
-
-	nrpoints := (rect.Max.X - rect.Min.X)  * (rect.Max.Y - rect.Min.Y)
-	writepoints := int(nrpoints/10)
-	
-	img := image.NewGray(rect)
-
-	f , _ := os.Create("/tmp/gray.png")
-
-	defer func (f *os.File, quit chan  bool ){
-		f.Seek(0,0)
-		png.Encode(f, img)
-		f.Sync()
-		f.Close()
-		fmt.Printf("grayimg: quitting\n")
-		quit <- true
-	}(f,quit)
-	
-	points := 0
-	var iv imgval
-	do_quit := false
-	for  {
-		select {
-		case iv = <-kanal:
-		case <-quit:
-			do_quit = true
-			fmt.Printf("grayimg: received quit\n")
-		case <-time.After(time.Second * 1):
-			if do_quit { return }
-		}
-		
-		
-		gray := 255-uint8((iv.v*10) % 256)
-//		gray := uint8(255)
-		if iv.v == 0 {
-			gray = 0
-		} 
-		x,y  := int(iv.x), int(iv.y)
-		
-		img.SetGray(x,y, color.Gray{gray})
-
-		if points % writepoints == 0 {
-			f.Seek(0,0)
-			png.Encode(f, img)
-			f.Sync()
-		}
-		points++;
-	}
-	
-	
-}
 
 func tuple_parse ( tuple string ) complex128 {
 
@@ -259,9 +348,9 @@ func main() {
 	
 	rect := image.Rect( xcornerx, xcornery, ycornerx, ycornery )
 	
-//	img := image.NewGray(rect)
 	
-	
+//	img := NewGrayImage( rect, "/tmp/gray.png")
+	img := NewColImage( rect, "/tmp/col.png")
 	
 	sizex := width / blocks
 	sizey := height / blocks
@@ -274,7 +363,7 @@ func main() {
 	imgkanal :=  make(chan imgval)
 	quit :=  make(chan bool)
 
-	go grayimg(rect, imgkanal, quit)
+	go grayimg(img, imgkanal, quit)
 
 	for i := 0 ; i < blocks; i++ {
 		dx :=  real(theX) + float64(i) * sizex

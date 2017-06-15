@@ -19,8 +19,8 @@ const upperbound = 2
 
 //const theX = complex(-1.8625,-0.001)
 //const theY = complex(-1.8595,0.001)
-const DefaultX = complex(-2.5,-1)
-const DefaultY = complex(1.0,1.0)
+const DefaultX = complex(-2.1,-1.2)
+const DefaultY = complex(0.5,1.2)
 const DefaultRes = 1000
 
 
@@ -275,13 +275,18 @@ func parse_args() (complex128, complex128, int) {
 	argsWithoutProg := os.Args[1:]
 
 	switch len(argsWithoutProg) {
+	case 1:
+		if res, err = strconv.Atoi(argsWithoutProg[0]) ; err != nil {
+			fmt.Printf("error in parsing parameter %s\n", argsWithoutProg[2])
+			panic("panicing!")
+		}
 	case 2:
 		x = tuple_parse(argsWithoutProg[0])
 		y = tuple_parse(argsWithoutProg[1])
 	case 3:
-		x = tuple_parse(argsWithoutProg[0])
-		y = tuple_parse(argsWithoutProg[1])
-		if res, err = strconv.Atoi(argsWithoutProg[2]) ; err != nil {
+		x = tuple_parse(argsWithoutProg[1])
+		y = tuple_parse(argsWithoutProg[2])
+		if res, err = strconv.Atoi(argsWithoutProg[0]) ; err != nil {
 			fmt.Printf("error in parsing parameter %s\n", argsWithoutProg[2])
 			panic("panicing!")
 		}
@@ -317,6 +322,8 @@ func main() {
 	pixy := int(float64(res)/ratio)
 
 	fmt.Printf("generating pic with ratio %f, %dx%d\n", ratio, pixx, pixy)
+	fmt.Printf("%s %d %f,%f %f,%f\n", os.Args[0], res, real(theX), imag(theX), real(theY), imag(theY))
+	
 
 	xcornerx := -pixx/2
 	xcornery := -pixy/2

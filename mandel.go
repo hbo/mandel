@@ -228,6 +228,7 @@ func main() {
 	// wait for ack from composeimg
 	<-quit  
 
+	// wait for /quit  from http server
 	<-httpquit
 //	fmt.Printf("img minx %d miny %d maxx %d maxy %d \n",  img.Bounds().Min.X, img.Bounds().Min.Y, img.Bounds().Max.X, img.Bounds().Max.Y  )
 

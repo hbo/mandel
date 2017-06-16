@@ -6,10 +6,6 @@ import "os"
 import "math"
 import "math/cmplx"
 import 	"image"
-import 	"image/color"
-import 	"image/png"
-import "strconv"
-import "strings"
 import "time"
 
 
@@ -37,94 +33,6 @@ type TargetImage interface {
 }
 
 
-type grayImage struct {
-	rect *image.Rectangle
-	img *image.Gray 
-	f *os.File 
-}
-
-type colImage struct {
-	rect *image.Rectangle
-	img *image.NRGBA 
-	f *os.File 
-}
-
-
-
-func NewGrayImage(r image.Rectangle, fname string) *grayImage {
-	
-	if thef, err := os.Create(fname) ; err != nil {
-		return nil
-	} else {
-		theimg := image.NewGray(r)
-		return &grayImage{rect: &r, f: thef, img: theimg}
-	}
-}
-
-func NewColImage(r image.Rectangle, fname string) *colImage {
-	
-	if thef, err := os.Create(fname) ; err != nil {
-		return nil
-	} else {
-		theimg := image.NewNRGBA(r)
-		return &colImage{rect: &r, f: thef, img: theimg}
-	}
-}
-
-
-
-
-
-func (gimg grayImage) Set(x,y, col int)  {
-	gray := 255-uint8((col*5) % 256)
-//		gray := uint8(255)
-	if col == 0 {
-		gray = 0
-	} 
-	gimg.img.SetGray(x,y, color.Gray{gray})
-}
-func (gimg grayImage) Max() image.Point  { return gimg.rect.Max }
-func (gimg grayImage) Min() image.Point  { return gimg.rect.Min }
-
-func (gimg grayImage) 	Sync() error {
-	gimg.f.Seek(0,0)
-	png.Encode(gimg.f, gimg.img)
-	return gimg.f.Sync()
-	
-}
-
-func (gimg grayImage)  Close() error {
-	return gimg.f.Close()
-}
-
-func (gimg colImage)  Close() error {
-	return gimg.f.Close()
-}
-
-func (gimg colImage) 	Sync() error {
-	gimg.f.Seek(0,0)
-	png.Encode(gimg.f, gimg.img)
-	return gimg.f.Sync()
-	
-}
-
-func (gimg colImage) Max() image.Point  { return gimg.rect.Max }
-func (gimg colImage) Min() image.Point  { return gimg.rect.Min }
-
-func (gimg colImage) Set(x,y, col int)  {
-	r, g, b := uint8(0), uint8(0), uint8(0)
-	
-
-	if col != 0 {
-		// this here defines the coloring of the picture
-		// currently quite daftly made.  We probably should
-		// define a curve through rgb space.
-		r = uint8((7*col + 25) % 256 )
-		b = uint8((11*col + 50) % 256)
-		g = uint8((17*col + 75) % 256)
-	}
-	gimg.img.Set(x,y, color.NRGBA{r,g,b,255})
-}
 
 
 func composeimg(img TargetImage, kanal chan imgval, quit chan bool) {
@@ -239,67 +147,6 @@ func mandel(x,y complex128,xpix, ypix, xxpix, yypix int, job int, kanal chan int
 }
 
 
-func tuple_parse ( tuple string ) complex128 {
-
-	comps := strings.Split(tuple, ",")
-
-	real , err  := strconv.ParseFloat(comps[0], 64)
-
-	if err != nil {
-		fmt.Printf("error in parsing parameter %s\n", tuple)
-		panic("panicing!")
-	}
-	
-	img , err  := strconv.ParseFloat(comps[1], 64)
-
-	if err != nil {
-		fmt.Printf("error in parsing parameter %s\n", tuple)
-		panic("panicing!")
-	}
-
-	return complex(real, img)
-}
-
-
-func parse_args() (complex128, complex128, int) {
-
-	var err error
-
-	res := DefaultRes
-	x := DefaultX
-	y := DefaultY
-
-
-	// We expect either 0 arguments (in which case the defaults hold)or 2  (x,y coords), or 3 (x,y,res)
-	
-	argsWithoutProg := os.Args[1:]
-
-	switch len(argsWithoutProg) {
-	case 1:
-		if res, err = strconv.Atoi(argsWithoutProg[0]) ; err != nil {
-			fmt.Printf("error in parsing parameter %s\n", argsWithoutProg[2])
-			panic("panicing!")
-		}
-	case 2:
-		x = tuple_parse(argsWithoutProg[0])
-		y = tuple_parse(argsWithoutProg[1])
-	case 3:
-		x = tuple_parse(argsWithoutProg[1])
-		y = tuple_parse(argsWithoutProg[2])
-		if res, err = strconv.Atoi(argsWithoutProg[0]) ; err != nil {
-			fmt.Printf("error in parsing parameter %s\n", argsWithoutProg[2])
-			panic("panicing!")
-		}
-	case 0:
-		return x, y, res
-	default:
-		fmt.Printf("error in parsing parameter: %d parameters\nshould be 0, 2 or 3\n", len(argsWithoutProg))
-		panic("panicing!")
-	}
-	
-	return x, y, res
-	
-}
 
 func main() {
 
@@ -346,8 +193,11 @@ func main() {
 	kanal :=  make(chan int)
 	imgkanal :=  make(chan imgval)
 	quit :=  make(chan bool)
+	httpquit :=  make(chan bool)
 
 	go composeimg(img, imgkanal, quit)
+
+	go httpserver(img, httpquit)
 
 	for i := 0 ; i < blocks; i++ {
 		dx :=  real(theX) + float64(i) * sizex
@@ -378,7 +228,8 @@ func main() {
 	// wait for ack from composeimg
 	<-quit  
 
-	
+	// wait for /quit  from http server
+	<-httpquit
 //	fmt.Printf("img minx %d miny %d maxx %d maxy %d \n",  img.Bounds().Min.X, img.Bounds().Min.Y, img.Bounds().Max.X, img.Bounds().Max.Y  )
 
 

@@ -24,14 +24,6 @@ type imgval struct  {
 	x,y, v  int
 }
 
-type TargetImage interface {
-	Set(x,y, col int)
-	Max() image.Point
-	Min() image.Point
-	Sync() error
-	Close() error
-}
-
 
 
 

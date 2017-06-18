@@ -28,6 +28,8 @@ func handleJSFile(w http.ResponseWriter, r *http.Request) {
 	switch  {
 	case  base == "imgload.js"  :
 		http.ServeFile(w, r, base)
+	case  base == "jquery-3.2.1.js"  :
+		http.ServeFile(w, r, "js/"+base)
 	default:
 		theError(w,r,"Hamwa nich", 404)
 	}
@@ -39,7 +41,7 @@ func handleHTMLFile(w http.ResponseWriter, r *http.Request) {
 	
 	switch  {
 	case  base == "/"  :
-		http.ServeFile(w, r, "bal.html")
+		http.ServeFile(w, r, "html/index.html")
 	default:
 		theError(w,r,"Hamwa nich", 404)
 	}

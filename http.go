@@ -75,6 +75,7 @@ func (i imgHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/":
 		handleFile(w, r)
 	case "/quit":
+		http.ServeFile(w, r, "html/shuttingdown.html")
 		i.quit <- true
 	case "/js":
 		handleFile(w, r)
